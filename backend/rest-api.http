@@ -1,0 +1,30 @@
+GET http://localhost:3000/users?email="user@example.com"
+Accept: application/json
+
+###
+POST http://localhost:3000/users/new
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "username": "user123",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+
+###
+
+POST http://localhost:3000/users/edit/:userId
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "username": "user123",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+
+###
+
