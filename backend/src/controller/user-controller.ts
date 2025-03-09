@@ -1,12 +1,15 @@
 import { Request, Response } from "express";
 import { z } from "zod";
+import prisma from "../prisma-client";
 
-const userRequestSchema = z.object({
+const UserRequestSchema = z.object({
   email: z.string().email().nonempty(),
   username: z.string().nonempty(),
   firstName: z.string().nonempty(),
   lastName: z.string().nonempty(),
 });
+
+type UserDto = z.infer<typeof UserRequestSchema>;
 
 const Errors = {
   UsernameAlreadyTaken: "UserNameAlreadyTaken",
@@ -15,13 +18,26 @@ const Errors = {
   ServerError: "ServerError",
   ClientError: "ClientError",
   UserNotFound: "UserNotFound",
-};
+} as const; // 'as const' ensures these values are treated as string literals
+
+type ErrorType = (typeof Errors)[keyof typeof Errors];
 
 interface UserResponse {
-  error: typeof Errors;
+  error?: ErrorType | undefined;
   success: boolean;
-  data: any;
+  data?: UserDto;
 }
+
+const generatePassword = () => {
+  var passwd = "";
+  var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  for (var i = 0; i < 10; i++) {
+    var c = Math.floor(Math.random() * chars.length + 1);
+    passwd += chars.charAt(c);
+  }
+
+  return passwd;
+};
 
 class UserController {
   validationError = {
@@ -31,51 +47,168 @@ class UserController {
   };
 
   public addUser = async (req: Request, res: Response) => {
-    let result = userRequestSchema.safeParse(req.body);
-    if (result.error) {
-      this.returnGenericValidationError(res);
-    } else {
-      console.log(result.data);
-      res.status(201).json({ data: result.data, success: true });
+    try {
+      let result = UserRequestSchema.safeParse(req.body);
+      if (result.error) {
+        this.returnGenericValidationError(res);
+        return;
+      }
+
+      const error = await this.validateUniqueEmailAndUserName(result.data);
+
+      if (error) {
+        return res.status(400).send({ error });
+      }
+
+      const { password, ...userRecord } = await prisma.user.create({
+        data: {
+          ...result.data,
+          password: generatePassword(),
+        },
+      });
+
+      res
+        .status(201)
+        .json({ data: userRecord, success: true, error: undefined });
+      return;
+    } catch (e) {
+      res
+        .status(500)
+        .json({ error: Errors.ServerError, data: undefined, success: false });
+      return;
     }
-    return;
   };
 
   public editUser = async (req: Request, res: Response) => {
-    const { userId } = req.params;
-    if (!userId) {
-      this.returnGenericValidationError(res);
+    try {
+      const userId = Number(req.params.UserId);
+      let result = UserRequestSchema.safeParse(req.body);
+      if (result.error) {
+        this.returnGenericValidationError(res);
+        return;
+      }
+
+      const userNotFoundError = await this.validateIfUserExists({ id: userId });
+
+      if (userNotFoundError) {
+        return res
+          .status(400)
+          .send({ error: userNotFoundError, success: false, data: undefined });
+      }
+
+      const error = await this.validateUniqueEmailAndUserName(result.data);
+
+      if (error) {
+        return res.status(400).send({ error });
+      }
+
+      const { password, ...updateUser } = await prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          ...result.data,
+        },
+      });
+
+      res
+        .status(200)
+        .json({ data: updateUser, success: true, error: undefined });
+      return;
+    } catch (e) {
+      res
+        .status(500)
+        .json({ error: Errors.ServerError, data: undefined, success: false });
       return;
     }
+  };
 
-    let result = userRequestSchema.safeParse(req.body);
-    if (result.error) {
+  private async validateIfUserExists(
+    where: Record<string, number | string>,
+  ): Promise<UserResponse | null> {
+    const userSaved = await prisma.user.findFirst({
+      where,
+    });
+
+    if (!userSaved) {
+      return {
+        error: Errors.UserNotFound,
+        data: undefined,
+        success: false,
+      };
+    }
+    return null;
+  }
+
+  public listUsers = async (req: Request, res: Response) => {
+    const email = req.query.email as string;
+    if (!email) {
       res.status(400).send({
         error: Errors.ValidationError,
         data: undefined,
         success: false,
       });
-    } else {
-      console.log(result.data);
-      res
-        .status(20!)
-        .send({ error: undefined, data: result.data, success: true });
+      return;
     }
-    return;
-  };
+    console.log("userEmail", email);
+    const userRecord = await prisma.user.findFirst({
+      where: { email },
+      select: {
+        id: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+      },
+    });
 
-  public listUsers = async (req: Request, res: Response) => {
-    const { userEmail } = req.query;
-    if (!userEmail) {
+    console.log("userRecord", userRecord);
+
+    if (!userRecord?.id) {
       res
         .status(400)
         .send({ error: Errors.UserNotFound, data: undefined, success: false });
+      return;
     }
+
+    res.status(200).json({ data: userRecord, success: true, error: undefined });
     return;
   };
 
   private returnGenericValidationError(res: Response) {
     return res.status(400).json(this.validationError);
+  }
+
+  private async validateUniqueEmailAndUserName(
+    data: UserDto,
+  ): Promise<UserResponse | null> {
+    const emailAlreadyInUsed = await prisma.user.findFirst({
+      where: { email: data.email },
+      select: { id: true },
+    });
+
+    if (emailAlreadyInUsed?.id) {
+      return {
+        data: undefined,
+        success: false,
+        error: Errors.EmailAlreadyInUse,
+      };
+    }
+
+    const userNameAlreadyInUsed = await prisma.user.findFirst({
+      where: { username: data.username },
+      select: { id: true },
+    });
+
+    if (userNameAlreadyInUsed?.id) {
+      return {
+        data: undefined,
+        success: false,
+        error: Errors.UsernameAlreadyTaken,
+      };
+    }
+
+    return null;
   }
 }
 

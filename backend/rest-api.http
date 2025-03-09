@@ -1,4 +1,4 @@
-GET http://localhost:3000/users?email="user@example.com"
+GET http://localhost:3000/users?email=user-3@example.com
 Accept: application/json
 
 ###
@@ -7,15 +7,15 @@ Accept: application/json
 Content-Type: application/json
 
 {
-  "email": "user@example.com",
-  "username": "user123",
-  "firstName": "John",
-  "lastName": "Doe"
+  "email": "user-{{$random.number.digit}}@example.com",
+  "username": "user{{$random.number.digit}}",
+  "firstName": "{{$random.name.firstName}}",
+  "lastName": "{{$random.name.lastName}}"
 }
 
 ###
 
-POST http://localhost:3000/users/edit/:userId
+POST http://localhost:3000/users/edit/4
 Accept: application/json
 Content-Type: application/json
 
