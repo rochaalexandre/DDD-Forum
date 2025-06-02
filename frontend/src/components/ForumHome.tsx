@@ -1,12 +1,51 @@
 import React, { useEffect, useState } from "react";
 import { Header } from "./shared/Header";
 import styles from "../styles/shared.module.css";
-import { getPosts, Post } from "../api/postApi";
+import { getPosts, Post, VoteDto, voteOnPost } from "../api/postApi";
+import { useAuth } from "../context/AuthContext";
+import { Toast, ToastType } from "./shared/Toast";
 
 const ForumHome: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const { user, isAuthenticated } = useAuth();
+
+  const handleVote = async (postId: number, voteType: "Upvote" | "Downvote") => {
+    console.log("Voting on post", isAuthenticated, user);
+    if (!isAuthenticated || !user?.memberId) {
+      setToast({
+        message: "You must be logged in to vote",
+        type: "error"
+      });
+      return;
+    }
+
+    try {
+      const voteData: VoteDto = {
+        memberId: user.memberId,
+        voteType: voteType
+      };
+
+      await voteOnPost(postId, voteData);
+
+      // Refresh posts to show updated vote count
+      const updatedPosts = await getPosts();
+      setPosts(updatedPosts);
+
+      setToast({
+        message: `${voteType} registered successfully!`,
+        type: "success"
+      });
+    } catch (err) {
+      console.error("Failed to vote:", err);
+      setToast({
+        message: "Failed to register vote. Please try again.",
+        type: "error"
+      });
+    }
+  };
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -44,9 +83,19 @@ const ForumHome: React.FC = () => {
           posts.map((post) => (
             <div key={post.id} className={styles["post-item"]}>
               <div className={styles["vote-section"]}>
-                <button className={styles["vote-button"]}>▲</button>
+                <button
+                  className={styles["vote-button"]}
+                  onClick={() => handleVote(post.id, "Upvote")}
+                  aria-label="Upvote"
+                >▲
+                </button>
                 <span className={styles["vote-count"]}>{post.votes}</span>
-                <button className={styles["vote-button"]}>▼</button>
+                <button
+                  className={styles["vote-button"]}
+                  onClick={() => handleVote(post.id, "Downvote")}
+                  aria-label="Downvote"
+                >▼
+                </button>
               </div>
               <div className={styles["post-content"]}>
                 <h2 className={styles["post-title"]}>{post.title}</h2>
@@ -59,6 +108,13 @@ const ForumHome: React.FC = () => {
           ))
         )}
       </main>
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

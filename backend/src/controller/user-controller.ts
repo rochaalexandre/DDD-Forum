@@ -10,7 +10,7 @@ const UserRequestSchema = z.object({
   lastName: z.string().nonempty(),
 });
 
-type UserDto = z.infer<typeof UserRequestSchema>;
+type UserDto = z.infer<typeof UserRequestSchema> & { memberId?: string };
 
 enum Errors {
   UsernameAlreadyTaken = "UserNameAlreadyTaken",
@@ -48,18 +48,39 @@ class UserController {
       }
 
       const hashedPassword = await bcrypt.hash("admin123", 10);
-      const { password, ...userRecord } = await prisma.user.create({
-        data: {
-          ...result.data,
-          password: hashedPassword,
+
+      // Create user and member in a transaction to ensure both are created or none
+      const { password, ...userRecord } = await prisma.$transaction(
+        async (prismaClient) => {
+          // Create the user
+          const newUser = await prismaClient.user.create({
+            data: {
+              ...result.data,
+              password: hashedPassword,
+            },
+          });
+
+          // Create a member record for this user
+          const newMember = await prismaClient.member.create({
+            data: {
+              userId: newUser.d,
+            },
+          });
+
+          // Return the user with the member ID
+          return {
+            ...newUser,
+            memberId: newMember.d,
+          };
         },
-      });
+      );
 
       res
         .status(201)
-        .json({ data: userRecord, success: true, error: undefined });
+        .json({ data: { ...userRecord }, success: true, error: undefined });
       return;
     } catch (e) {
+      console.error("Error creating user:", e);
       res
         .status(500)
         .json({ error: Errors.ServerError, data: undefined, success: false });
@@ -152,6 +173,11 @@ class UserController {
         firstName: true,
         lastName: true,
         email: true,
+        member: {
+          select: {
+            id: true,
+          },
+        },
       },
     });
 
@@ -162,7 +188,17 @@ class UserController {
       return;
     }
 
-    res.status(200).json({ data: userRecord, success: true, error: undefined });
+    // Include the member ID in the response
+    // Create response data without the member property
+    const { member, ...responseData } = {
+      ...userRecord,
+      memberId: userRecord.member?id,
+    };
+
+    console.log(responseData);
+    res
+      .status(200)
+      .json({ data: responseData, success: true, error: undefined });
     return;
   };
 

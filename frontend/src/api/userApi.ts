@@ -15,6 +15,7 @@ export interface UserResponse {
   username: string;
   firstName: string;
   lastName: string;
+  memberId?: number; // Optional for backward compatibility
 }
 
 export interface ApiResponse {
