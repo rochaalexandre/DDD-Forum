@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../prisma-client";
+import { generatePassword } from "../utils";
 
 const UserRequestSchema = z.object({
   email: z.string().email().nonempty(),
@@ -12,7 +13,7 @@ const UserRequestSchema = z.object({
 type UserDto = z.infer<typeof UserRequestSchema>;
 
 const Errors = {
-  UsernameAlreadyTaken: "UserNameAlreadyTaken",
+  UsernameAlreadyTaken: "UsernameAlreadyTaken",
   EmailAlreadyInUse: "EmailAlreadyInUse",
   ValidationError: "ValidationError",
   ServerError: "ServerError",
@@ -27,17 +28,6 @@ interface UserResponse {
   success: boolean;
   data?: UserDto;
 }
-
-const generatePassword = () => {
-  var passwd = "";
-  var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  for (var i = 0; i < 10; i++) {
-    var c = Math.floor(Math.random() * chars.length + 1);
-    passwd += chars.charAt(c);
-  }
-
-  return passwd;
-};
 
 class UserController {
   validationError = {
@@ -81,7 +71,9 @@ class UserController {
 
   public editUser = async (req: Request, res: Response) => {
     try {
-      const userId = Number(req.params.UserId);
+      console.log("EDIT USer called");
+
+      const userId = Number(req.params.userId);
       let result = UserRequestSchema.safeParse(req.body);
       if (result.error) {
         this.returnGenericValidationError(res);
@@ -96,7 +88,10 @@ class UserController {
           .send({ error: userNotFoundError, success: false, data: undefined });
       }
 
-      const error = await this.validateUniqueEmailAndUserName(result.data);
+      const error = await this.validateUniqueEmailAndUserName(
+        result.data,
+        userId,
+      );
 
       if (error) {
         return res.status(400).send({ error });
@@ -150,7 +145,7 @@ class UserController {
       });
       return;
     }
-    console.log("userEmail", email);
+
     const userRecord = await prisma.user.findFirst({
       where: { email },
       select: {
@@ -161,8 +156,6 @@ class UserController {
         email: true,
       },
     });
-
-    console.log("userRecord", userRecord);
 
     if (!userRecord?.id) {
       res
@@ -181,9 +174,13 @@ class UserController {
 
   private async validateUniqueEmailAndUserName(
     data: UserDto,
+    excludeUserId?: number,
   ): Promise<UserResponse | null> {
     const emailAlreadyInUsed = await prisma.user.findFirst({
-      where: { email: data.email },
+      where: {
+        email: data.email,
+        ...(excludeUserId ? { NOT: { id: excludeUserId } } : {}),
+      },
       select: { id: true },
     });
 
@@ -196,7 +193,10 @@ class UserController {
     }
 
     const userNameAlreadyInUsed = await prisma.user.findFirst({
-      where: { username: data.username },
+      where: {
+        username: data.username,
+        ...(excludeUserId ? { NOT: { id: excludeUserId } } : {}),
+      },
       select: { id: true },
     });
 

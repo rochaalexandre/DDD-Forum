@@ -1,0 +1,65 @@
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.forumContainer {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: monospace;
+}
+
+.forumHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.logoSection {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.logo {
+    width: 60px;
+    height: 60px;
+}
+
+.headerText h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: normal;
+}
+
+.headerText p {
+    margin: 5px 0 0;
+    font-size: 14px;
+    color: #787c7e;
+}
+
+.actions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.submitLink {
+    color: blue;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.join-button {
+    background-color: #000;
+    color: white;
+    border: none;
+    padding: 8px 24px;
+    cursor: pointer;
+    font-family: monospace;
+}
