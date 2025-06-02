@@ -54,10 +54,88 @@
     text-decoration: none;
 }
 
+.login-button {
+    color: #0079d3;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 8px 16px;
+    border: 1px solid #0079d3;
+    border-radius: 4px;
+}
+
 .submit-link {
     color: #0079d3;
     text-decoration: none;
     font-size: 14px;
+}
+
+.user-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 20px;
+    background-color: #f5f5f5;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.user-profile:hover {
+    background-color: #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #0079d3;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    text-transform: uppercase;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.username {
+    font-size: 14px;
+    font-weight: bold;
+    color: #1c1c1c;
+}
+
+.user-role {
+    font-size: 11px;
+    color: #787c7e;
+    margin-top: -2px;
+}
+
+.logout-button {
+    background-color: #000;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 12px;
+    transition: background-color 0.2s ease;
+}
+
+.logout-button:hover {
+    background-color: #333;
 }
 
 /* Navigation styles */

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../prisma-client";
-import { generatePassword } from "../utils";
+import bcrypt from "bcrypt";
 
 const UserRequestSchema = z.object({
   email: z.string().email().nonempty(),
@@ -50,10 +50,11 @@ class UserController {
         return res.status(400).send({ error });
       }
 
+      const hashedPassword = await bcrypt.hash("admin123", 10);
       const { password, ...userRecord } = await prisma.user.create({
         data: {
           ...result.data,
-          password: generatePassword(),
+          password: hashedPassword,
         },
       });
 

@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Header } from "./shared/Header";
 import styles from "../styles/shared.module.css";
 import { createUser } from "../api/userApi";
+import { Toast, ToastType } from "./shared/Toast";
+import { useAuth } from "../context/AuthContext";
 
 interface RegistrationForm {
   email: string;
@@ -21,6 +23,7 @@ interface ValidationErrors {
 
 export const Registration: React.FC = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState<RegistrationForm>({
     email: "",
     username: "",
@@ -30,6 +33,7 @@ export const Registration: React.FC = () => {
 
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
@@ -73,19 +77,30 @@ export const Registration: React.FC = () => {
         if (!response.success) {
           if (response.error === "EmailAlreadyInUse") {
             setErrors({ ...errors, email: "Email is already in use" });
+            setToast({ message: "Email is already in use", type: "error" });
           } else if (response.error === "UsernameAlreadyTaken") {
             setErrors({ ...errors, username: "Username is already taken" });
+            setToast({ message: "Username is already taken", type: "error" });
           } else {
             setErrors({ ...errors, submit: "Registration failed. Please try again." });
+            setToast({ message: "Registration failed. Please try again.", type: "error" });
           }
           return;
         }
 
         // Handle successful registration
-        alert("Registration successful! You can now log in.");
-        navigate("/"); // Redirect to home page
+        if (response.data) {
+          login(response.data);
+        }
+        setToast({ message: "Registration successful! Redirecting to home page...", type: "success" });
+
+        // Redirect to home page after 3 seconds
+        setTimeout(() => {
+          navigate("/");
+        }, 3000);
       } catch (error) {
         setErrors({ ...errors, submit: "Registration failed. Please try again." });
+        setToast({ message: "Registration failed. Please try again.", type: "error" });
       } finally {
         setIsSubmitting(false);
       }
@@ -166,6 +181,14 @@ export const Registration: React.FC = () => {
       <div className={styles.loginPrompt}>
         Already have an account? <Link to="/login">Login</Link>
       </div>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }; 
