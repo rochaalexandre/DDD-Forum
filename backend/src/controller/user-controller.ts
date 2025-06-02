@@ -12,19 +12,16 @@ const UserRequestSchema = z.object({
 
 type UserDto = z.infer<typeof UserRequestSchema>;
 
-const Errors = {
-  UsernameAlreadyTaken: "UsernameAlreadyTaken",
-  EmailAlreadyInUse: "EmailAlreadyInUse",
-  ValidationError: "ValidationError",
-  ServerError: "ServerError",
-  ClientError: "ClientError",
-  UserNotFound: "UserNotFound",
-} as const; // 'as const' ensures these values are treated as string literals
-
-type ErrorType = (typeof Errors)[keyof typeof Errors];
+enum Errors {
+  UsernameAlreadyTaken = "UserNameAlreadyTaken",
+  EmailAlreadyInUse = "EmailAlreadyInUse",
+  ValidationError = "ValidationError",
+  ServerError = "ServerError",
+  UserNotFound = "UserNotFound",
+}
 
 interface UserResponse {
-  error?: ErrorType | undefined;
+  error?: Errors | undefined;
   success: boolean;
   data?: UserDto;
 }
