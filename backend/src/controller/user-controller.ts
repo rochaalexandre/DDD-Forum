@@ -63,14 +63,14 @@ class UserController {
           // Create a member record for this user
           const newMember = await prismaClient.member.create({
             data: {
-              userId: newUser.d,
+              userId: newUser.id,
             },
           });
 
           // Return the user with the member ID
           return {
             ...newUser,
-            memberId: newMember.d,
+            memberId: newMember.id,
           };
         },
       );
@@ -192,7 +192,7 @@ class UserController {
     // Create response data without the member property
     const { member, ...responseData } = {
       ...userRecord,
-      memberId: userRecord.member?id,
+      memberId: userRecord.member?.id,
     };
 
     console.log(responseData);

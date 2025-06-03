@@ -3,7 +3,6 @@ import cors from "cors";
 
 import userController from "./controller/user-controller";
 import postController from "./controller/post-controller";
-import { checkAndPrepareDatabaseAsync } from "./database-seeder";
 
 const app = express();
 app.use(express.json());
@@ -21,14 +20,7 @@ app.post("/posts/:postId/vote", postController.vote);
 
 const port = process.env.PORT || 3030;
 
-// First seed the database, then start the server
-checkAndPrepareDatabaseAsync()
-  .then(() =>
-    app.listen(port, () => {
-      console.log(`Server is running on port ${port}`);
-    }),
-  )
-  .catch((error) => {
-    console.error("Failed to start application:", error);
-    process.exit(1);
-  });
+// Start the server
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
