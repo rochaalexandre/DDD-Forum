@@ -1,0 +1,30 @@
+GET http://localhost:3030/users?email=user-3@example.com
+Accept: application/json
+
+###
+POST http://localhost:3030/users/new
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "user-{{$random.number.digit}}@example.com",
+  "username": "user{{$random.number.digit}}",
+  "firstName": "{{$random.name.firstName}}",
+  "lastName": "{{$random.name.lastName}}"
+}
+
+###
+
+POST http://localhost:3030/users/edit/4
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "username": "user123",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+
+###
+
